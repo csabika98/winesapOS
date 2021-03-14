@@ -97,19 +97,6 @@
   tags:
     - linux_stick_drivers
 
-- name: Blacklist kernel drivers
-  lineinfile:
-    path: /etc/modprobe.d/linux-gaming-stick.conf
-    line: "blacklist {{ item }}"
-  loop:
-    # Bluetooth
-    - apple_bl
-    # WiFi
-    - brcmfmac
-    - brcmutil
-  tags:
-    - linux_stick_drivers
-
 - name: Setup SSH keys
   authorized_key:
     user: "{{ stick_user }}"

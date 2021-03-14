@@ -18,8 +18,9 @@ Linux gaming, on a stick, designed for Mac enthusiasts. This is an opinonated ta
       * [Btrfs Backups](#btrfs-backups)
          * [Automatic](#automatic)
          * [Manual](#manual)
-      * [WiFi Driver (88x2bu)](#wifi-driver-88x2bu)
-      * [Blacklist Drivers](#blacklist-drivers)
+      * [WiFi Drivers](#wifi-drivers)
+         * [brcmfmac](#brcmfmac)
+         * [88x2bu](#88x2bu)
       * [Wireless Keyboard and Mouse](#wireless-keyboard-and-mouse)
       * [Packages](#packages)
       * [VPN (ZeroTier)](#vpn-zerotier)
@@ -74,11 +75,7 @@ Goals:
 - As much reproducible automation as possible via Ansible.
     - Any manual steps will be documented in this README file.
 
-Not planned to support:
-
-- Built-in Bluetooth and/or WiFi.
-
-It is easier and more reliable to buy additional hardware and use a USB-C hub than to rely on hacky Linux drivers for Mac. Workarounds do exist for [WiFi](https://gist.github.com/roadrunner2/1289542a748d9a104e7baec6a92f9cd7#gistcomment-3080934) on the 2016-2017 MacBook Pros however speeds are reported as being slower.
+It is easier and more reliable to buy additional hardware and use a USB-C hub than to rely on hacky Linux drivers for Mac.
 
 ## Hardware
 
@@ -285,7 +282,18 @@ GRUB needs to be manually updated with the latest snapshots. In the future, this
 $ sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-### WiFi Driver (88x2bu)
+### WiFi Drivers
+
+#### brcmfmac
+
+Some of the newer MacBook Pros use the BCM43602 WiFi PCI device. It uses the ``brcmfmac`` kernel driver which [has workarounds but has been reported to probably never be fully supported by Broadcom on Linux](https://bugzilla.kernel.org/show_bug.cgi?id=193121). Using the included script in this repository, the configuration file `brcmfmac43602-pcie.txt` is copied over to the system and then the MAC address is automatically populated. This properly enables both 2.4 GHz and 5 GHz WiFi frequencies on the device.
+
+```
+$ cd scripts
+$ ./wifi.sh
+```
+
+#### 88x2bu
 
 Follow the [DKMS installation](https://github.com/cilynx/rtl88x2BU#dkms-installation) instructions for the rtl88x2bu driver. Then use `modprobe 88x2bu` to load it.
 
@@ -310,10 +318,6 @@ $ sudo ./install.cirrus.driver.sh
 $ echo "snd-hda-codec-cirrus" | sudo tee -a /etc/modules-load.d/linux-gaming-stick.conf
 $ sudo modprobe snd-hda-codec-cirrus
 ```
-
-### Blacklist Drivers
-
-Some models of the 2016-2017 MacBook Pro have unreliable Bluetooth and WiFi drivers. It is recommended to blacklist (disable) those drivers: `apple_bl`, `brcmfmac`, and `brcmutil`. This is done automatically by the `linux_stick` Ansible role. In this situation, an external Bluetooth and WiFi adapter should be used for the best experience.
 
 ### Packages
 
@@ -481,6 +485,7 @@ Boot the Mac into the flash drive by pressing and releasing the power button. Th
 - Plug everything into the USB-C hub before connecting it to the comptuer and turning the computer on.
 - Do NOT move the USB-C hub after plugging it in and booting up Linux. It can easily disconnect leading to a corrupt file system.
 - Avoid using Flatpak and Snap packages. These use a lot of additional space compared to native system packages. Programs packaged this way are also slower.
+- Make scripts executable to help with troubleshooting: `Activities > Files > Preferences > Behavior > Executable Text Files > Ask what to do`
 - Delete old Btrfs backups when the flash drive is running low on storage space.
     - `$ sudo apt-btrfs-snapshot list` `$ sudo apt-btrfs-snapshot delete <SNAPSHOT>`
 
