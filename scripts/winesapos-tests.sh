@@ -276,6 +276,14 @@ else
     echo FAIL
 fi
 
+echo -n "Checking that Zink is enabled as the OpenGL-to-Vulkan graphics driver..."
+grep -q -P "^MESA_LOADER_DRIVER_OVERRIDE=zink$" ${WINESAPOS_INSTALL_DIR}/etc/environment
+if [ $? -eq 0 ]; then
+    echo PASS
+else
+    echo FAIL
+fi
+
 echo -n "Testing package installations complete.\n\n"
 
 echo "Testing Mac drivers installation..."

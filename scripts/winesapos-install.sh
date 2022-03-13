@@ -391,6 +391,13 @@ echo "Minimizing writes to the disk compelete."
 echo "Setting up the desktop environment..."
 # Install Xorg.
 arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} xorg-server lib32-mesa mesa xorg-server xorg-xinit xterm xf86-input-libinput xf86-video-amdgpu xf86-video-intel xf86-video-nouveau
+
+if [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
+    # SteamOS does not ship the Intel OpenGL driver. It does ship the Intel Vulkan driver. Use Zink for OpenGL-to-Vulkan support cross-platform.
+    # https://github.com/LukeShortCloud/winesapOS/issues/261
+    echo MESA_LOADER_DRIVER_OVERRIDE=zink >> ${WINESAPOS_INSTALL_DIR}/etc/environment
+fi
+
 # Install Light Display Manager.
 arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} lightdm lightdm-gtk-greeter
 if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then

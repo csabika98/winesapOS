@@ -45,6 +45,7 @@
 - Add PeaZip for an archive/compression utility.
 - Add BalenaEtcher as an image flashing utility.
 - Add support for resizing the root file system on NVMe drvies.
+- Change OpenGL driver to Zink.
 
 ## 2.2.0
 
