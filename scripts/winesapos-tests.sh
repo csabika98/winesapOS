@@ -817,15 +817,17 @@ if [[ "${WINESAPOS_DISTRO}" != "manjaro" ]]; then
 fi
 echo "Checking that all the packages from the AUR have been installed by yay done."
 
-echo 'Testing that the "pamac" package manager is installed...'
+echo "Testing that the GUI package managers Pamac and AppImageLauncher are installed..."
 if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
     pacman_search_loop \
       pamac-gtk pamac-cli \
       libpamac-flatpak-plugin \
-      libpamac-snap-plugin
+      libpamac-snap-plugin \
+      appimagelauncher
 else
     pacman_search_loop \
-      pamac-all
+      pamac-all \
+      appimagelauncher
 fi
 
 echo "Checking that all of the Pamac plugins are enabled..."
@@ -839,7 +841,7 @@ for i in EnableAUR CheckAURUpdates EnableFlatpak CheckFlatpakUpdates EnableSnap;
     fi
 done
 echo "Checking that all of the Pamac plugins are enabled complete."
-echo "Testing that the "pamac" package manager is installed complete."
+echo "Testing that the GUI package managers Pamac and AppImageLauncher are installed complete."
 
 echo 'Testing that the PipeWire audio library is installed...'
 echo "Checking that PipeWire packages are installed..."

@@ -510,6 +510,7 @@ Use the "winesapOS Upgrade" wizard to upgrade winesapOS features and/or system s
 Here is a list of all of the applications found on the desktop and their use-case:
 
 - Add/Remove Software = Pamac. A package manager for official Arch Linux, Arch Linux User Repository (AUR), Flatpak, and Snap packages.
+- AppImageLauncher = A package manager for AppImage packages.
 - BalenaEtcher = An image flashing utility.
 - Bluetooth Manager = A bluetooth pairing utility (Blueman).
 - Bottles = A utility for installing any Windows program.
@@ -544,7 +545,8 @@ Here is a list of all of the applications found on the desktop and their use-cas
 - ZeroTier GUI = A VPN utility.' > ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/README.txt
 echo "Setting up the desktop environment complete."
 
-echo 'Setting up the "pamac" package manager...'
+echo "Setting up GUI package managers..."
+# Pamac.
 if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
     arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} pamac-gtk pamac-cli libpamac-flatpak-plugin libpamac-snap-plugin
 else
@@ -564,6 +566,12 @@ echo EnableFlatpak >> ${WINESAPOS_INSTALL_DIR}/etc/pamac.conf
 echo CheckFlatpakUpdates >> ${WINESAPOS_INSTALL_DIR}/etc/pamac.conf
 ## There is no "CheckSnapUpdates" configuration setting.
 echo EnableSnap >> ${WINESAPOS_INSTALL_DIR}/etc/pamac.conf
+
+if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} appimagelauncher
+else
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} appimagelauncher
+fi
 
 clear_cache
 echo "Setting up GUI package managers complete."
@@ -633,7 +641,6 @@ arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /home/winesap/Desktop/heroic_
 cp ${WINESAPOS_INSTALL_DIR}/usr/share/applications/net.lutris.Lutris.desktop ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/lutris.desktop
 sed -i s'/Exec=lutris\ \%U/Exec=\/usr\/bin\/gamemoderun \/usr\/bin\/lutris\ \%U/'g ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/lutris.desktop
 arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /home/winesap/Desktop/lutris.desktop "Desktop Entry" Name "Lutris - GameMode"
-cp ${WINESAPOS_INSTALL_DIR}/usr/share/applications/appimagelauncher.desktop ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/
 cp ${WINESAPOS_INSTALL_DIR}/usr/share/applications/blueman-manager.desktop ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/
 cp ${WINESAPOS_INSTALL_DIR}/var/lib/flatpak/app/com.usebottles.bottles/current/active/export/share/applications/com.usebottles.bottles.desktop ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/
 cp ${WINESAPOS_INSTALL_DIR}/usr/share/applications/org.gnome.Cheese.desktop ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/

@@ -9,6 +9,7 @@
 - Change Steam to be installed as part of the first-time setup.
 - Add documentation in the read me file for doing customized installations on bare-metal.
 - Change the Minecraft launcher from MultiMC to PolyMC and have it installed as a Flatpak.
+- Add AppImageLauncher for better AppImage integration.
 
 ## 3.0.0
 
