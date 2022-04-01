@@ -303,8 +303,10 @@ echo -e "apfs\nbtrfs\next4\nexfat\nfat\nhfs\nhfsplus\nntfs3\nzfs" > ${WINESAPOS_
 echo "Installing additional file system support complete."
 
 echo "Setting up the desktop environment..."
+# Install 'mesa-steamos' first to avoid 'lib32-mesa-steamos' or Xorg packages from installing the conflicting upstream 'mesa' package.
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} mesa-steamos lib32-mesa-steamos
 # Install Xorg.
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} xorg-server lib32-mesa-steamos mesa-steamos xorg-server xorg-xinit xterm xf86-input-libinput xf86-video-amdgpu xf86-video-intel xf86-video-nouveau
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} xorg-server xorg-xinit xterm xf86-input-libinput xf86-video-amdgpu xf86-video-intel xf86-video-nouveau
 # Install Light Display Manager.
 arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} lightdm lightdm-gtk-greeter
 if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
@@ -407,6 +409,8 @@ Here is a list of all of the applications found on the desktop and their use-cas
 - VLC media player = A media player that can play almost any format.
 - winesapOS First-Time Setup = A utility for setting up the correct graphics drivers, locale, and time zone.
 - ZeroTier GUI = A VPN utility.' > ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/README.txt
+
+clear_cache
 echo "Setting up the desktop environment complete."
 
 echo "Installing additional packages..."
