@@ -1,5 +1,9 @@
 # Change Log
 
+## 3.1.0
+
+- Change SteamOS Mesa to be from the AUR where more features are enabled.
+
 ## 3.0.1
 
 - Add option to build winesapOS on bare-metal.
