@@ -302,140 +302,6 @@ arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} zfs-dkms zfs-utils
 echo -e "apfs\nbtrfs\next4\nexfat\nfat\nhfs\nhfsplus\nntfs3\nzfs" > ${WINESAPOS_INSTALL_DIR}/etc/modules-load.d/winesapos-file-systems.conf
 echo "Installing additional file system support complete."
 
-echo "Installing sound drivers..."
-# Install the PipeWire sound driver.
-## PipeWire.
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} pipewire lib32-pipewire pipewire-media-session
-## PipeWire backwards compatibility.
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} pipewire-alsa pipewire-jack lib32-pipewire-jack pipewire-pulse pipewire-v4l2 lib32-pipewire-v4l2
-## Enable the required services.
-## Manually create the 'systemctl --user enable' symlinks as the command does not work in a chroot.
-mkdir -p ${WINESAPOS_INSTALL_DIR}/home/winesap/.config/systemd/user/default.target.wants/
-arch-chroot ${WINESAPOS_INSTALL_DIR} ln -s /usr/lib/systemd/user/pipewire.service /home/winesap/.config/systemd/user/default.target.wants/pipewire.service
-arch-chroot ${WINESAPOS_INSTALL_DIR} ln -s /usr/lib/systemd/user/pipewire-pulse.service /home/winesap/.config/systemd/user/default.target.wants/pipewire-pulse.service
-# Custom systemd service to mute the audio on start.
-# https://github.com/LukeShortCloud/winesapOS/issues/172
-cp ../files/winesapos-mute.service ${WINESAPOS_INSTALL_DIR}/etc/systemd/user/
-cp ./winesapos-mute.sh ${WINESAPOS_INSTALL_DIR}/usr/local/bin/
-arch-chroot ${WINESAPOS_INSTALL_DIR} ln -s /etc/systemd/user/winesapos-mute.service /home/winesap/.config/systemd/user/default.target.wants/winesapos-mute.service
-# PulseAudio Control is a GUI used for managing PulseAudio (or, in our case, PipeWire-Pulse).
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} pavucontrol
-echo "Installing sound drivers complete."
-
-echo "Installing additional packages..."
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} clamav clamtk ffmpeg jre8-openjdk keepassxc libdvdcss libreoffice lm_sensors man-db mlocate nano ncdu nmap openssh python python-pip rsync shutter smartmontools sudo terminator tmate transmission-cli transmission-qt wget veracrypt vim vlc zstd
-# Download an offline database for ClamAV.
-arch-chroot ${WINESAPOS_INSTALL_DIR} freshclam
-
-# Etcher by balena.
-if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} etcher
-elif [[ "${WINESAPOS_DISTRO}" == "arch" ]]; then
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} etcher-bin
-elif [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} balena-etcher
-fi
-echo "Installing additional packages complete."
-
-echo "Installing additional packages from the AUR..."
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} firefox-esr-bin qdirstat
-
-if [[ "${WINESAPOS_DE}" == "cinnamon" ]]; then
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} peazip-gtk2-bin
-elif [[ "${WINESAPOS_DE}" == "plasma" ]]; then
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} peazip-qt-bin
-fi
-
-echo "Installing additional packages from the AUR complete."
-
-echo "Installing Oh My Zsh..."
-
-if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} oh-my-zsh zsh
-else
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} zsh
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} oh-my-zsh-git
-fi
-
-cp ${WINESAPOS_INSTALL_DIR}/usr/share/oh-my-zsh/zshrc ${WINESAPOS_INSTALL_DIR}/home/winesap/.zshrc
-chown 1000.1000 ${WINESAPOS_INSTALL_DIR}/home/winesap/.zshrc
-echo "Installing Oh My Zsh complete."
-
-echo "Installing the Linux kernels..."
-
-if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux510 linux510-headers linux515 linux515-headers
-else
-    # The SteamOS repository 'holo' also provides heavily modified versions of these packages that do not work.
-    # Those packages use a non-standard location for the kernel and modules.
-    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} core/linux-lts core/linux-lts-headers
-
-    # We want to install two Linux kernels. 'linux-lts' currently provides 5.15.
-    # Then we install 'linux-neptune' (5.13) on SteamOS or 'linux-lts510' on Arch Linux.
-    if [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
-        arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux-neptune linux-neptune-headers
-    elif [[ "${WINESAPOS_DISTRO}" == "arch" ]]; then
-        # This repository contains binary/pre-built packages for Arch Linux LTS kernels.
-        arch-chroot ${WINESAPOS_INSTALL_DIR} pacman-key --keyserver hkps://keyserver.ubuntu.com --recv-key 76C6E477042BFE985CC220BD9C08A255442FAFF0
-        arch-chroot ${WINESAPOS_INSTALL_DIR} pacman-key --lsign 76C6E477042BFE985CC220BD9C08A255442FAFF0
-        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf kernel-lts Server 'https://repo.m2x.dev/current/$repo/$arch'
-        arch-chroot ${WINESAPOS_INSTALL_DIR} pacman -S -y --noconfirm
-        arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux-lts510 linux-lts510-headers
-    fi
-
-fi
-
-if [[ "${WINESAPOS_DISABLE_KERNEL_UPDATES}" == "true" ]]; then
-    echo "Setting up Pacman to disable Linux kernel updates..."
-
-    if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
-        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux515 linux515-headers linux510 linux510-headers"
-    elif [[ "${WINESAPOS_DISTRO}" == "arch" ]]; then
-        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux-lts linux-lts-headers linux-lts510 linux-lts510-headers"
-    # On SteamOS, also avoid the 'jupiter/linux-firmware-neptune' package as it will replace 'core/linux-firmware' and only has drivers for the Steam Deck.
-    # Also void 'holo/grub' becauase SteamOS has a heavily modified version of GRUB for their A/B partitions compared to the vanilla 'core/grub' package.
-    elif [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
-        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux-lts linux-lts-headers linux-neptune linux-neptune-headers linux-firmware-neptune grub"
-    fi
-
-    echo "Setting up Pacman to disable Linux kernel updates complete."
-else
-
-    if [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
-        # SteamOS ships heavily modified version of the Linux LTS packages that do not work with upstream GRUB.
-        # Even if WINESAPOS_DISABLE_KERNEL_UPDATES=false, we cannot risk breaking a system if users rely on Linux LTS for their system to boot.
-        # The real solution is for Pacman to support ignoring specific packages from specific repositories:
-        # https://bugs.archlinux.org/task/20361
-        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux-lts linux-lts-headers linux-firmware-neptune grub"
-    fi
-
-fi
-
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux-firmware
-# Install optional firmware.
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} \
-  linux-firmware-bnx2x \
-  linux-firmware-liquidio \
-  linux-firmware-marvell \
-  linux-firmware-mellanox \
-  linux-firmware-nfp \
-  linux-firmware-qcom \
-  linux-firmware-qlogic \
-  linux-firmware-whence
-
-clear_cache
-echo "Installing the Linux kernels complete."
-
-echo "Optimizing battery life..."
-arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} auto-cpufreq
-arch-chroot ${WINESAPOS_INSTALL_DIR} systemctl enable auto-cpufreq
-echo "Optimizing battery life complete."
-
-echo "Minimizing writes to the disk..."
-arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/systemd/journald.conf Journal Storage volatile
-echo "vm.swappiness=10" >> ${WINESAPOS_INSTALL_DIR}/etc/sysctl.d/00-winesapos.conf
-echo "Minimizing writes to the disk compelete."
-
 echo "Setting up the desktop environment..."
 # Install Xorg.
 arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} xorg-server lib32-mesa-steamos mesa-steamos xorg-server xorg-xinit xterm xf86-input-libinput xf86-video-amdgpu xf86-video-intel xf86-video-nouveau
@@ -542,6 +408,141 @@ Here is a list of all of the applications found on the desktop and their use-cas
 - winesapOS First-Time Setup = A utility for setting up the correct graphics drivers, locale, and time zone.
 - ZeroTier GUI = A VPN utility.' > ${WINESAPOS_INSTALL_DIR}/home/winesap/Desktop/README.txt
 echo "Setting up the desktop environment complete."
+
+echo "Installing additional packages..."
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} clamav clamtk ffmpeg jre8-openjdk keepassxc libdvdcss libreoffice lm_sensors man-db mlocate nano ncdu nmap openssh python python-pip rsync shutter smartmontools sudo terminator tmate transmission-cli transmission-qt wget veracrypt vim vlc zstd
+# Download an offline database for ClamAV.
+arch-chroot ${WINESAPOS_INSTALL_DIR} freshclam
+
+# Etcher by balena.
+if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} etcher
+elif [[ "${WINESAPOS_DISTRO}" == "arch" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} etcher-bin
+elif [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} balena-etcher
+fi
+echo "Installing additional packages complete."
+
+echo "Installing sound drivers..."
+# Install the PipeWire sound driver.
+## PipeWire.
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} pipewire lib32-pipewire pipewire-media-session
+## PipeWire backwards compatibility.
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} pipewire-alsa pipewire-jack lib32-pipewire-jack pipewire-pulse pipewire-v4l2 lib32-pipewire-v4l2
+## Enable the required services.
+## Manually create the 'systemctl --user enable' symlinks as the command does not work in a chroot.
+mkdir -p ${WINESAPOS_INSTALL_DIR}/home/winesap/.config/systemd/user/default.target.wants/
+arch-chroot ${WINESAPOS_INSTALL_DIR} ln -s /usr/lib/systemd/user/pipewire.service /home/winesap/.config/systemd/user/default.target.wants/pipewire.service
+arch-chroot ${WINESAPOS_INSTALL_DIR} ln -s /usr/lib/systemd/user/pipewire-pulse.service /home/winesap/.config/systemd/user/default.target.wants/pipewire-pulse.service
+# Custom systemd service to mute the audio on start.
+# https://github.com/LukeShortCloud/winesapOS/issues/172
+cp ../files/winesapos-mute.service ${WINESAPOS_INSTALL_DIR}/etc/systemd/user/
+cp ./winesapos-mute.sh ${WINESAPOS_INSTALL_DIR}/usr/local/bin/
+arch-chroot ${WINESAPOS_INSTALL_DIR} ln -s /etc/systemd/user/winesapos-mute.service /home/winesap/.config/systemd/user/default.target.wants/winesapos-mute.service
+# PulseAudio Control is a GUI used for managing PulseAudio (or, in our case, PipeWire-Pulse).
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} pavucontrol
+echo "Installing sound drivers complete."
+
+
+echo "Installing additional packages from the AUR..."
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} firefox-esr-bin qdirstat
+
+if [[ "${WINESAPOS_DE}" == "cinnamon" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} peazip-gtk2-bin
+elif [[ "${WINESAPOS_DE}" == "plasma" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} peazip-qt-bin
+fi
+
+echo "Installing additional packages from the AUR complete."
+
+echo "Installing Oh My Zsh..."
+
+if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} oh-my-zsh zsh
+else
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} zsh
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} oh-my-zsh-git
+fi
+
+cp ${WINESAPOS_INSTALL_DIR}/usr/share/oh-my-zsh/zshrc ${WINESAPOS_INSTALL_DIR}/home/winesap/.zshrc
+chown 1000.1000 ${WINESAPOS_INSTALL_DIR}/home/winesap/.zshrc
+echo "Installing Oh My Zsh complete."
+
+echo "Installing the Linux kernels..."
+
+if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux510 linux510-headers linux515 linux515-headers
+else
+    # The SteamOS repository 'holo' also provides heavily modified versions of these packages that do not work.
+    # Those packages use a non-standard location for the kernel and modules.
+    arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} core/linux-lts core/linux-lts-headers
+
+    # We want to install two Linux kernels. 'linux-lts' currently provides 5.15.
+    # Then we install 'linux-neptune' (5.13) on SteamOS or 'linux-lts510' on Arch Linux.
+    if [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
+        arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux-neptune linux-neptune-headers
+    elif [[ "${WINESAPOS_DISTRO}" == "arch" ]]; then
+        # This repository contains binary/pre-built packages for Arch Linux LTS kernels.
+        arch-chroot ${WINESAPOS_INSTALL_DIR} pacman-key --keyserver hkps://keyserver.ubuntu.com --recv-key 76C6E477042BFE985CC220BD9C08A255442FAFF0
+        arch-chroot ${WINESAPOS_INSTALL_DIR} pacman-key --lsign 76C6E477042BFE985CC220BD9C08A255442FAFF0
+        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf kernel-lts Server 'https://repo.m2x.dev/current/$repo/$arch'
+        arch-chroot ${WINESAPOS_INSTALL_DIR} pacman -S -y --noconfirm
+        arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux-lts510 linux-lts510-headers
+    fi
+
+fi
+
+if [[ "${WINESAPOS_DISABLE_KERNEL_UPDATES}" == "true" ]]; then
+    echo "Setting up Pacman to disable Linux kernel updates..."
+
+    if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
+        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux515 linux515-headers linux510 linux510-headers"
+    elif [[ "${WINESAPOS_DISTRO}" == "arch" ]]; then
+        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux-lts linux-lts-headers linux-lts510 linux-lts510-headers"
+    # On SteamOS, also avoid the 'jupiter/linux-firmware-neptune' package as it will replace 'core/linux-firmware' and only has drivers for the Steam Deck.
+    # Also void 'holo/grub' becauase SteamOS has a heavily modified version of GRUB for their A/B partitions compared to the vanilla 'core/grub' package.
+    elif [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
+        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux-lts linux-lts-headers linux-neptune linux-neptune-headers linux-firmware-neptune grub"
+    fi
+
+    echo "Setting up Pacman to disable Linux kernel updates complete."
+else
+
+    if [[ "${WINESAPOS_DISTRO}" == "steamos" ]]; then
+        # SteamOS ships heavily modified version of the Linux LTS packages that do not work with upstream GRUB.
+        # Even if WINESAPOS_DISABLE_KERNEL_UPDATES=false, we cannot risk breaking a system if users rely on Linux LTS for their system to boot.
+        # The real solution is for Pacman to support ignoring specific packages from specific repositories:
+        # https://bugs.archlinux.org/task/20361
+        arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/pacman.conf options IgnorePkg "linux-lts linux-lts-headers linux-firmware-neptune grub"
+    fi
+
+fi
+
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} linux-firmware
+# Install optional firmware.
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_PACMAN_INSTALL} \
+  linux-firmware-bnx2x \
+  linux-firmware-liquidio \
+  linux-firmware-marvell \
+  linux-firmware-mellanox \
+  linux-firmware-nfp \
+  linux-firmware-qcom \
+  linux-firmware-qlogic \
+  linux-firmware-whence
+
+clear_cache
+echo "Installing the Linux kernels complete."
+
+echo "Optimizing battery life..."
+arch-chroot ${WINESAPOS_INSTALL_DIR} ${CMD_YAY_INSTALL} auto-cpufreq
+arch-chroot ${WINESAPOS_INSTALL_DIR} systemctl enable auto-cpufreq
+echo "Optimizing battery life complete."
+
+echo "Minimizing writes to the disk..."
+arch-chroot ${WINESAPOS_INSTALL_DIR} crudini --set /etc/systemd/journald.conf Journal Storage volatile
+echo "vm.swappiness=10" >> ${WINESAPOS_INSTALL_DIR}/etc/sysctl.d/00-winesapos.conf
+echo "Minimizing writes to the disk compelete."
 
 echo 'Setting up the "pamac" package manager...'
 if [[ "${WINESAPOS_DISTRO}" == "manjaro" ]]; then
