@@ -5,6 +5,7 @@
 - Add option to build winesapOS on bare-metal.
 - Add option for the build to create a raw image file instead of using an existing block device.
 - Add support for installing directly onto a NVMe or loopback block storage device.
+- Change SteamOS Mesa to be from the AUR where more features are enabled.
 
 ## 3.0.0
 
